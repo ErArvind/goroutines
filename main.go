@@ -10,12 +10,35 @@ import (
 
 func main() {
 	start := time.Now()
-	resp, _ := http.Get("http://dev.markitondemand.com/MODApis/Api/v2/Quote?symbol=googl")
-	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
-	quote := new(QuoteResponse)
-	xml.Unmarshal(body, &quote)
-	fmt.Printf("%s : %.2f", quote.Name, quote.LastPrice)
+
+	stockSymbols := []string{
+		"googl",
+		"msft",
+		"aapl",
+		"bbry",
+		"vz",
+		"t",
+		"tmus",
+		"s",
+	}
+	// in  this situaion we know how many go routines will be running
+	// that is number of symbol in slice
+	numComplete := 0
+	for _, sybmol := range stockSymbols {
+		go func(sybmol string) {
+
+			resp, _ := http.Get("http://dev.markitondemand.com/MODApis/Api/v2/Quote?symbol=" + sybmol)
+			defer resp.Body.Close()
+			body, _ := ioutil.ReadAll(resp.Body)
+			quote := new(QuoteResponse)
+			xml.Unmarshal(body, &quote)
+			fmt.Printf("%s : %.2f\n", quote.Name, quote.LastPrice)
+			numComplete++
+		}(sybmol)
+	}
+	for numComplete < len(stockSymbols) {
+		time.Sleep(10 * time.Millisecond)
+	}
 	elapsed := time.Since(start)
 	fmt.Printf("execution time : %s", elapsed)
 	// go func() {
